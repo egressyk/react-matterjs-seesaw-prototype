@@ -29,9 +29,10 @@ class Game extends React.Component {
     seesawPosY: 400,
     seesawAngularVelocity: Math.PI/180,
     ballSize: 20,
-    ballDensity: 0.0002,
+    ballDensity: 0.002,
     ballRestitution: 0.3,
     ballPosY: 100,
+    ballSpawnOffset: 70,
   }
   
   gameState = {
@@ -121,7 +122,7 @@ class Game extends React.Component {
         Body.setAngularVelocity( seesaw, seesaw.angularVelocity + this.gameSettings.seesawAngularVelocity);
       }
       if (event.keyCode === 32) {
-        // addBall();
+        this.startBall();
       }
     });
   }
@@ -152,15 +153,45 @@ class Game extends React.Component {
     seesaw.parts[goalBlockIndex].render.fillStyle = this.gameSettings.palette.goalAreaActive;
   }
 
+  createBalls() {
+    let balls = [];
+    for (let i = 0; i < 3; i++) {
+      const ball = Bodies.circle(
+        this.gameSettings.canvasWidth / 2,
+        this.gameSettings.ballPosY,
+        this.gameSettings.ballSize, 
+        { 
+          restitution: this.gameSettings.ballRestitution,
+          density: this.gameSettings.ballDensity,
+          render: {
+            fillSytle: this.gameSettings.palette.ball 
+          }
+        }
+      );
+      balls.push(ball);
+    }
+    return balls;
+  }
+
+  startBall() {
+    // TODO
+    const ball = this.gameObjects.balls[0];
+    const ballSpawnPosXA = this.gameSettings.canvasWidth / 2 - this.gameSettings.ballSpawnOffset;
+    const ballSpawnPosXB = this.gameSettings.canvasWidth / 2 + this.gameSettings.ballSpawnOffset;
+    const randXPos = Math.round(Math.random()) > 0 ? ballSpawnPosXA : ballSpawnPosXB;
+    Body.setPosition(ball, {x: randXPos, y: ball.position.y})
+    World.add(this.gameState.engine.world, ball);
+  }
+
   componentDidMount() {
     let measureTimeStart = null;
     let measureTimeEnd = null;
-    let timeSpentOnGoalArea = 0;
-    const goalAreaIndex = Math.round(Math.random()*4);
 
     this.initializeMatterJS();
 
     this.gameObjects.seesaw = this.createSeesaw();
+    this.gameObjects.balls = this.createBalls();
+
     this.addSeesawToWorld(this.gameObjects.seesaw);
     this.setGoalBlock(this.gameObjects.seesaw);
     this.setupControl(this.gameObjects.seesaw)
@@ -180,11 +211,6 @@ class Game extends React.Component {
     //   });
     //   World.add(this.gameState.engine.world, ball);
     // }
-
-    // Seesaw
-    
-
-  // stack.bodies[goalAreaIndex].render.fillStyle = palette.goalAreaInactive;
 
     // Events.on(render, "afterRender", function(event) {
     //   ctx.font = "30px Arial";
