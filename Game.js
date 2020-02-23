@@ -126,6 +126,32 @@ class Game extends React.Component {
     });
   }
 
+  setGoalBlock(seesaw) {
+    let goalBlockIndex;
+    switch(this.gameState.currentLevel) {
+      case 1: {
+        goalBlockIndex = 5;
+        break;
+      }
+      case 2: {
+        goalBlockIndex = Math.round(Math.random()) ? 4 : 6;
+        break;
+      }
+      case 3: {
+        goalBlockIndex = Math.round(Math.random()) ? 3 : 7;
+        break;
+      }
+      case 4: {
+        goalBlockIndex = Math.round(Math.random()) ? 2 : 8;
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+    seesaw.parts[goalBlockIndex].render.fillStyle = this.gameSettings.palette.goalAreaActive;
+  }
+
   componentDidMount() {
     let measureTimeStart = null;
     let measureTimeEnd = null;
@@ -136,6 +162,7 @@ class Game extends React.Component {
 
     this.gameObjects.seesaw = this.createSeesaw();
     this.addSeesawToWorld(this.gameObjects.seesaw);
+    this.setGoalBlock(this.gameObjects.seesaw);
     this.setupControl(this.gameObjects.seesaw)
 
     // const canvas = render.canvas;
