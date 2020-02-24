@@ -23,6 +23,7 @@ class Game extends React.Component {
       goalAreaInactive: '#348498',
       goalAreaActive: '#5bd1d7',
     },
+    roundTime: 90,
     canvasHeigth: 600,
     canvasWidth: 600,
     seesawBlockSize: 50,
@@ -40,6 +41,9 @@ class Game extends React.Component {
     currentTimeSpentOnSpot: 0,
     currentTimeLeft: 0,
     currentBallsLost: 0,
+    goalBlockIndex: null,
+    measureTimeStart: null,
+    measureTimeEnd: null,
     engine: null,
     render: null
   }
@@ -127,30 +131,29 @@ class Game extends React.Component {
     });
   }
 
-  setGoalBlock(seesaw) {
-    let goalBlockIndex;
+  setGoalBlockIndex(seesaw) {
     switch(this.gameState.currentLevel) {
       case 1: {
-        goalBlockIndex = 5;
+        this.gameState.goalBlockIndex= 5;
         break;
       }
       case 2: {
-        goalBlockIndex = Math.round(Math.random()) ? 4 : 6;
+        this.gameState.goalBlockIndex = Math.round(Math.random()) ? 4 : 6;
         break;
       }
       case 3: {
-        goalBlockIndex = Math.round(Math.random()) ? 3 : 7;
+        this.gameState.goalBlockIndex = Math.round(Math.random()) ? 3 : 7;
         break;
       }
       case 4: {
-        goalBlockIndex = Math.round(Math.random()) ? 2 : 8;
+        this.gameState.goalBlockIndex = Math.round(Math.random()) ? 2 : 8;
         break;
       }
       default: {
         break;
       }
     }
-    seesaw.parts[goalBlockIndex].render.fillStyle = this.gameSettings.palette.goalAreaActive;
+    seesaw.parts[this.gameState.goalBlockIndex].render.fillStyle = this.gameSettings.palette.goalAreaInactive;
   }
 
   createBalls() {
@@ -173,6 +176,62 @@ class Game extends React.Component {
     return balls;
   }
 
+  setupDisplayResult() {
+    // Display results just for debugging
+    const ctx = this.gameState.render.context;
+    Events.on(this.gameState.render, "afterRender", (event) => {
+      ctx.font = "30px Arial";
+      ctx.fillStyle = "orange";
+      ctx.textAlign = "center";
+      const displayMessage = `${this.gameState.currentTimeSpentOnSpot.toFixed()} millisec
+      ${this.gameState.currentBallsLost} balls lost`;
+      ctx.fillText(displayMessage, this.gameSettings.canvasWidth/2, this.gameSettings.canvasHeigth/10);
+    });
+  }
+
+  setupBallOnSpotDetection(seesaw) {
+    const goalBlock = seesaw.parts[this.gameState.goalBlockIndex];
+    const palette = this.gameSettings.palette;
+
+    // Change color when collision starts
+    Events.on(this.gameState.engine, 'collisionStart', (event) => {
+        const pairs = event.pairs;
+        for (var i = 0; i < pairs.length; i++) {
+          if (pairs[i].bodyA == goalBlock ||
+          pairs[i].bodyB == goalBlock) {
+            goalBlock.render.fillStyle = palette.goalAreaActive;
+          }
+        }
+    });
+
+    // Detect time spent on the spot
+    Events.on(this.gameState.engine, 'collisionActive', (event) => {
+        const pairs = event.pairs;
+        for (var i = 0; i < pairs.length; i++) {
+          if (pairs[i].bodyA == goalBlock || 
+          pairs[i].bodyB == goalBlock) {
+            this.gameState.measureTimeEnd = event.source.timing.timestamp;
+            if (this.gameState.measureTimeStart && this.gameState.measureTimeEnd) {
+              
+              this.gameState.currentTimeSpentOnSpot += this.gameState.measureTimeEnd - this.gameState.measureTimeStart;
+            }
+            this.gameState.measureTimeStart = this.gameState.measureTimeEnd;
+          }
+        }
+    }); 
+
+    // Change color when collision ends
+    Events.on(this.gameState.engine, 'collisionEnd', (event) => {
+        const pairs = event.pairs;
+        for (var i = 0; i < pairs.length; i++) {
+          if (pairs[i].bodyA == goalBlock ||
+          pairs[i].bodyB == goalBlock) {
+            goalBlock.render.fillStyle = palette.goalAreaInactive;
+          }
+        }
+    });
+  }
+
   startBall() {
     // TODO
     const ball = this.gameObjects.balls[0];
@@ -193,75 +252,20 @@ class Game extends React.Component {
     this.gameObjects.balls = this.createBalls();
 
     this.addSeesawToWorld(this.gameObjects.seesaw);
-    this.setGoalBlock(this.gameObjects.seesaw);
-    this.setupControl(this.gameObjects.seesaw)
+    this.setGoalBlockIndex(this.gameObjects.seesaw);
+    this.setupControl(this.gameObjects.seesaw);
 
-    // const canvas = render.canvas;
-    // const ctx = render.context;
+    this.setupBallOnSpotDetection(this.gameObjects.seesaw)
+    this.setupDisplayResult();
+    // this.setupBallLossHandling();
+
+    
     
 
-    // function addBall() {
-    //   const randXPos = Math.round(Math.random()) > 0 ? 260 : 340;
-    //   const ball = Bodies.circle(randXPos, 100, 20, { 
-    //     restitution: 0.3,
-    //     density: 0.0002,
-    //     render: {
-    //       fillSytle: palette.ball 
-    //     }
-    //   });
-    //   World.add(this.gameState.engine.world, ball);
-    // }
-
-    // Events.on(render, "afterRender", function(event) {
-    //   ctx.font = "30px Arial";
-    //   ctx.fillStyle = "orange";
-    //   ctx.textAlign = "center";
-    //   const displayMessage = `${timeSpentOnGoalArea.toFixed()} millisec`;
-    //   ctx.fillText(displayMessage, canvas.width/2, canvas.height/10);
-    // });
+    
 
 
-    // // an example of using collisionStart event on an engine
-    // Events.on(engine, 'collisionStart', function(event) {
-    //     var pairs = event.pairs;
 
-    //     // change object colours to show those starting a collision
-    //     for (var i = 0; i < pairs.length; i++) {
-    //       if (pairs[i].bodyA == stack.bodies[goalAreaIndex] ||
-    //       pairs[i].bodyB == stack.bodies[goalAreaIndex]) {
-    //         stack.bodies[goalAreaIndex].render.fillStyle = palette.goalAreaActive;
-    //       }
-    //     }
-    // });
-
-    // Events.on(engine, 'collisionActive', function(event) {
-    //     var pairs = event.pairs;
-
-    //     // change object colours to show those ending a collision
-    //     for (var i = 0; i < pairs.length; i++) {
-    //       if (pairs[i].bodyA == stack.bodies[goalAreaIndex] || 
-    //       pairs[i].bodyB == stack.bodies[goalAreaIndex]) {
-    //         measureTimeEnd = event.source.timing.timestamp;
-    //         if (measureTimeStart && measureTimeEnd) {
-    //           timeSpentOnGoalArea += measureTimeEnd - measureTimeStart;
-    //         }
-    //         measureTimeStart = measureTimeEnd;
-    //       }
-    //     }
-    // }); 
-
-    // // an example of using collisionEnd event on an engine
-    // Events.on(engine, 'collisionEnd', function(event) {
-    //     var pairs = event.pairs;
-
-    //     // change object colours to show those ending a collision
-    //     for (var i = 0; i < pairs.length; i++) {
-    //       if (pairs[i].bodyA == stack.bodies[goalAreaIndex] ||
-    //       pairs[i].bodyB == stack.bodies[goalAreaIndex]) {
-    //         stack.bodies[goalAreaIndex].render.fillStyle = palette.goalAreaInactive;
-    //       }
-    //     }
-    // });
 
     // addBall();
 
