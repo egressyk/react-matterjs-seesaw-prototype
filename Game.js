@@ -294,12 +294,16 @@ class Game extends React.Component {
 
   startBall() {
     const ball = this.gameObjects.balls.find( ball => ball.position.y === this.gameSettings.ballPosY);
-    const ballSpawnPosXA = this.gameSettings.canvasWidth / 2 - this.gameSettings.ballSpawnOffset;
-    const ballSpawnPosXB = this.gameSettings.canvasWidth / 2 + this.gameSettings.ballSpawnOffset;
-    const randXPos = Math.round(Math.random()) > 0 ? ballSpawnPosXA : ballSpawnPosXB;
-    Body.setPosition(ball, {x: randXPos, y: ball.position.y})
-    World.add(this.gameState.engine.world, ball);
-    this.gameState.currentLevelHasStarted = true;
+    if (ball) {
+      const ballSpawnPosXA = this.gameSettings.canvasWidth / 2 - this.gameSettings.ballSpawnOffset;
+      const ballSpawnPosXB = this.gameSettings.canvasWidth / 2 + this.gameSettings.ballSpawnOffset;
+      const randXPos = Math.round(Math.random()) > 0 ? ballSpawnPosXA : ballSpawnPosXB;
+      Body.setPosition(ball, {x: randXPos, y: ball.position.y})
+      World.add(this.gameState.engine.world, ball);
+      if (!this.gameState.currentLevelHasStarted) {
+        this.gameState.currentLevelHasStarted = true;
+      }
+    }
   }
 
   render() {
