@@ -39,8 +39,10 @@ class Game extends React.Component {
   gameState = {
     currentLevel: 1,
     currentTimeSpentOnSpot: 0,
-    currentTimeLeft: 0,
+    currentTimeLeft: null,
     currentBallsLost: 0,
+    currentStartTimestamp: null,
+    currentLevelHasStarted: false,
     results: [],
     goalBlockIndex: null,
     measureTimeStart: null,
@@ -73,8 +75,9 @@ class Game extends React.Component {
     // Initialize event handlers
     this.initDisplayResult();
     this.initControl(this.gameObjects.seesaw);
-    this.initBallOnSpotDetection(this.gameObjects.seesaw)
-    this.initBallLossHandling(this.gameObjects.balls)
+    this.initBallOnSpotDetection(this.gameObjects.seesaw);
+    this.initBallLossHandling(this.gameObjects.balls);
+    this.initTimerHandling();
 
     Engine.run(this.gameState.engine);
     Render.run(this.gameState.render);
@@ -199,15 +202,18 @@ class Game extends React.Component {
   }
 
   initDisplayResult() {
-    // Display results just for debugging
     const ctx = this.gameState.render.context;
     Events.on(this.gameState.render, "afterRender", (event) => {
       ctx.font = "30px Arial";
       ctx.fillStyle = "orange";
       ctx.textAlign = "center";
-      const displayMessage = `${this.gameState.currentTimeSpentOnSpot.toFixed()} millisec
-      ${this.gameState.currentBallsLost} balls lost`;
-      ctx.fillText(displayMessage, this.gameSettings.canvasWidth/2, this.gameSettings.canvasHeigth/10);
+      const timerText = `${this.gameState.currentTimeLeft}`;
+      const onSpotTimerText = `${this.gameState.currentTimeSpentOnSpot.toFixed()} millisec`;
+      const ballsLostText = `${this.gameState.currentBallsLost} balls lost`;
+      
+      ctx.fillText(timerText, this.gameSettings.canvasWidth/2, this.gameSettings.canvasHeigth/10);
+      ctx.fillText(onSpotTimerText, this.gameSettings.canvasWidth/2, this.gameSettings.canvasHeigth/10 + 40);
+      ctx.fillText(ballsLostText, this.gameSettings.canvasWidth/2, this.gameSettings.canvasHeigth/10 + 80);
     });
   }
 
@@ -267,6 +273,15 @@ class Game extends React.Component {
     });
   }
 
+  initTimerHandling() {
+    let i = 0;
+    Events.on(this.gameState.render, "afterRender", (event) => {
+      if (this.gameState.currentLevelHasStarted) {
+        this.gameState.currentTimeLeft = Math.round(this.gameSettings.roundTime - ((event.timestamp - this.gameState.currentStartTimestamp) / 1000));
+      }
+    });
+  }
+
   resetBallValues(ball) {
     Body.setPosition(ball, {
       x: this.gameSettings.canvasWidth / 2,
@@ -284,6 +299,7 @@ class Game extends React.Component {
     const randXPos = Math.round(Math.random()) > 0 ? ballSpawnPosXA : ballSpawnPosXB;
     Body.setPosition(ball, {x: randXPos, y: ball.position.y})
     World.add(this.gameState.engine.world, ball);
+    this.gameState.currentLevelHasStarted = true;
   }
 
   render() {
