@@ -41,6 +41,7 @@ class Game extends React.Component {
     currentTimeSpentOnSpot: 0,
     currentTimeLeft: 0,
     currentBallsLost: 0,
+    results: [],
     goalBlockIndex: null,
     measureTimeStart: null,
     measureTimeEnd: null,
@@ -58,7 +59,28 @@ class Game extends React.Component {
     this.state = {};
   }
 
-  initializeMatterJS() {
+  componentDidMount() {
+    this.initializeMatterJS();
+
+    // Setup game objects
+    this.gameObjects.seesaw = this.createSeesaw();
+    this.gameObjects.balls = this.createBalls();
+    this.setGoalBlockIndex(this.gameObjects.seesaw);
+
+    // Add game objects to world
+    this.addSeesawToWorld(this.gameObjects.seesaw);
+    
+    // Initialize event handlers
+    this.initDisplayResult();
+    this.initControl(this.gameObjects.seesaw);
+    this.initBallOnSpotDetection(this.gameObjects.seesaw)
+    this.initBallLossHandling(this.gameObjects.balls)
+
+    Engine.run(this.gameState.engine);
+    Render.run(this.gameState.render);
+  }
+
+    initializeMatterJS() {
     this.gameState.engine = Engine.create();
     this.gameState.render = Render.create({
       element: this.refs.game,
@@ -117,7 +139,7 @@ class Game extends React.Component {
     );
   }
 
-  setupControl(seesaw) {
+  initControl(seesaw) {
     document.addEventListener('keydown', (event) => {
       if (event.keyCode === 37) {
         Body.setAngularVelocity( seesaw, seesaw.angularVelocity - this.gameSettings.seesawAngularVelocity);
@@ -158,7 +180,7 @@ class Game extends React.Component {
 
   createBalls() {
     let balls = [];
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 10; i++) {
       const ball = Bodies.circle(
         this.gameSettings.canvasWidth / 2,
         this.gameSettings.ballPosY,
@@ -176,7 +198,7 @@ class Game extends React.Component {
     return balls;
   }
 
-  setupDisplayResult() {
+  initDisplayResult() {
     // Display results just for debugging
     const ctx = this.gameState.render.context;
     Events.on(this.gameState.render, "afterRender", (event) => {
@@ -189,7 +211,7 @@ class Game extends React.Component {
     });
   }
 
-  setupBallOnSpotDetection(seesaw) {
+  initBallOnSpotDetection(seesaw) {
     const goalBlock = seesaw.parts[this.gameState.goalBlockIndex];
     const palette = this.gameSettings.palette;
 
@@ -232,49 +254,36 @@ class Game extends React.Component {
     });
   }
 
+  initBallLossHandling(balls) {
+    const outOfScreenPosY = this.gameSettings.canvasHeigth + this.gameSettings.ballSize;
+    Events.on(this.gameState.render, "afterRender", (event) => {
+      let ballsToRemove = Composite.allBodies(this.gameState.engine.world).filter( body => 
+        balls.includes(body) &&  body.position.y > outOfScreenPosY)
+      ballsToRemove.forEach( ball => {
+          World.remove(this.gameState.engine.world, ball);
+          this.resetBallValues(ball);
+          this.gameState.currentBallsLost++;
+      }) 
+    });
+  }
+
+  resetBallValues(ball) {
+    Body.setPosition(ball, {
+      x: this.gameSettings.canvasWidth / 2,
+      y: this.gameSettings.ballPosY
+    });
+    Body.setAngle(ball, 0);
+    Body.setVelocity(ball, {x: 0, y: 0});
+    Body.setAngularVelocity(ball, 0);
+  }
+
   startBall() {
-    // TODO
-    const ball = this.gameObjects.balls[0];
+    const ball = this.gameObjects.balls.find( ball => ball.position.y === this.gameSettings.ballPosY);
     const ballSpawnPosXA = this.gameSettings.canvasWidth / 2 - this.gameSettings.ballSpawnOffset;
     const ballSpawnPosXB = this.gameSettings.canvasWidth / 2 + this.gameSettings.ballSpawnOffset;
     const randXPos = Math.round(Math.random()) > 0 ? ballSpawnPosXA : ballSpawnPosXB;
     Body.setPosition(ball, {x: randXPos, y: ball.position.y})
     World.add(this.gameState.engine.world, ball);
-  }
-
-  componentDidMount() {
-    let measureTimeStart = null;
-    let measureTimeEnd = null;
-
-    this.initializeMatterJS();
-
-    this.gameObjects.seesaw = this.createSeesaw();
-    this.gameObjects.balls = this.createBalls();
-
-    this.addSeesawToWorld(this.gameObjects.seesaw);
-    this.setGoalBlockIndex(this.gameObjects.seesaw);
-    this.setupControl(this.gameObjects.seesaw);
-
-    this.setupBallOnSpotDetection(this.gameObjects.seesaw)
-    this.setupDisplayResult();
-    // this.setupBallLossHandling();
-
-    
-    
-
-    
-
-
-
-
-    // addBall();
-
-    // Add control
-
-
-    Engine.run(this.gameState.engine);
-
-    Render.run(this.gameState.render);
   }
 
   render() {
