@@ -11,10 +11,18 @@ class App extends Component {
     };
   }
 
+  componentDidMount() {
+    document.addEventListener('keydown', (event) => {
+      if (event.keyCode === 13) {
+        this.refs.game.startLevel(4);
+      }
+    });
+  }
+
   render() {
     return (
       <div>
-        <Game />
+        <Game ref="game" gameSettings={{roundTime: 120}}/>
       </div>
     );
   }

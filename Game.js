@@ -17,6 +17,7 @@ class Game extends React.Component {
   
   gameSettings = {
     palette: {
+      textColor: "orange",
       background: '#32343E',
       ball: '#ff502f',
       seesaw: '#004d61',
@@ -43,6 +44,7 @@ class Game extends React.Component {
     currentBallsLost: 0,
     currentStartTimestamp: null,
     currentLevelHasStarted: false,
+    currentTimerHasStarted: false,
     results: [],
     goalBlockIndex: null,
     measureTimeStart: null,
@@ -59,6 +61,7 @@ class Game extends React.Component {
   constructor(props) {
     super(props);
     this.state = {};
+    this.gameSettings = Object.assign(this.gameSettings, props.gameSettings);
   }
 
   componentDidMount() {
@@ -67,7 +70,6 @@ class Game extends React.Component {
     // Setup game objects
     this.gameObjects.seesaw = this.createSeesaw();
     this.gameObjects.balls = this.createBalls();
-    this.setGoalBlockIndex(this.gameObjects.seesaw);
 
     // Add game objects to world
     this.addSeesawToWorld(this.gameObjects.seesaw);
@@ -163,21 +165,34 @@ class Game extends React.Component {
         break;
       }
       case 2: {
-        this.gameState.goalBlockIndex = Math.round(Math.random()) ? 4 : 6;
+        this.gameState.goalBlockIndex = 4;
         break;
       }
       case 3: {
-        this.gameState.goalBlockIndex = Math.round(Math.random()) ? 3 : 7;
+        this.gameState.goalBlockIndex = 6;
         break;
       }
       case 4: {
-        this.gameState.goalBlockIndex = Math.round(Math.random()) ? 2 : 8;
+        this.gameState.goalBlockIndex = 3;
+        break;
+      }
+      case 5: {
+        this.gameState.goalBlockIndex = 7;
+        break;
+      }
+      case 6: {
+        this.gameState.goalBlockIndex = 2;
+        break;
+      }
+      case 7: {
+        this.gameState.goalBlockIndex = 8;
         break;
       }
       default: {
         break;
       }
     }
+    seesaw.parts.forEach( part => part.render.fillStyle = this.gameSettings.palette.seesaw);
     seesaw.parts[this.gameState.goalBlockIndex].render.fillStyle = this.gameSettings.palette.goalAreaInactive;
   }
 
@@ -205,7 +220,7 @@ class Game extends React.Component {
     const ctx = this.gameState.render.context;
     Events.on(this.gameState.render, "afterRender", (event) => {
       ctx.font = "30px Arial";
-      ctx.fillStyle = "orange";
+      ctx.fillStyle = this.gameSettings.palette.textColor;
       ctx.textAlign = "center";
       const timerText = `${this.gameState.currentTimeLeft}`;
       const onSpotTimerText = `${this.gameState.currentTimeSpentOnSpot.toFixed()} millisec`;
@@ -218,11 +233,11 @@ class Game extends React.Component {
   }
 
   initBallOnSpotDetection(seesaw) {
-    const goalBlock = seesaw.parts[this.gameState.goalBlockIndex];
     const palette = this.gameSettings.palette;
 
     // Change color when collision starts
     Events.on(this.gameState.engine, 'collisionStart', (event) => {
+        const goalBlock = seesaw.parts[this.gameState.goalBlockIndex];
         const pairs = event.pairs;
         for (var i = 0; i < pairs.length; i++) {
           if (pairs[i].bodyA == goalBlock ||
@@ -234,6 +249,7 @@ class Game extends React.Component {
 
     // Detect time spent on the spot
     Events.on(this.gameState.engine, 'collisionActive', (event) => {
+        const goalBlock = seesaw.parts[this.gameState.goalBlockIndex];
         const pairs = event.pairs;
         for (var i = 0; i < pairs.length; i++) {
           if (pairs[i].bodyA == goalBlock || 
@@ -250,6 +266,7 @@ class Game extends React.Component {
 
     // Change color when collision ends
     Events.on(this.gameState.engine, 'collisionEnd', (event) => {
+        const goalBlock = seesaw.parts[this.gameState.goalBlockIndex];
         const pairs = event.pairs;
         for (var i = 0; i < pairs.length; i++) {
           if (pairs[i].bodyA == goalBlock ||
@@ -266,23 +283,22 @@ class Game extends React.Component {
       let ballsToRemove = Composite.allBodies(this.gameState.engine.world).filter( body => 
         balls.includes(body) &&  body.position.y > outOfScreenPosY)
       ballsToRemove.forEach( ball => {
-          World.remove(this.gameState.engine.world, ball);
-          this.resetBallValues(ball);
+          this.resetBall(ball);
           this.gameState.currentBallsLost++;
       }) 
     });
   }
 
   initTimerHandling() {
-    let i = 0;
     Events.on(this.gameState.render, "afterRender", (event) => {
-      if (this.gameState.currentLevelHasStarted) {
+      if (this.gameState.currentTimerHasStarted) {
         this.gameState.currentTimeLeft = Math.round(this.gameSettings.roundTime - ((event.timestamp - this.gameState.currentStartTimestamp) / 1000));
       }
     });
   }
 
-  resetBallValues(ball) {
+  resetBall(ball) {
+    World.remove(this.gameState.engine.world, ball);
     Body.setPosition(ball, {
       x: this.gameSettings.canvasWidth / 2,
       y: this.gameSettings.ballPosY
@@ -290,6 +306,10 @@ class Game extends React.Component {
     Body.setAngle(ball, 0);
     Body.setVelocity(ball, {x: 0, y: 0});
     Body.setAngularVelocity(ball, 0);
+  }
+
+  resetBalls() {
+    this.gameObjects.balls.forEach( ball => this.resetBall(ball) );
   }
 
   startBall() {
@@ -300,10 +320,35 @@ class Game extends React.Component {
       const randXPos = Math.round(Math.random()) > 0 ? ballSpawnPosXA : ballSpawnPosXB;
       Body.setPosition(ball, {x: randXPos, y: ball.position.y})
       World.add(this.gameState.engine.world, ball);
-      if (!this.gameState.currentLevelHasStarted) {
-        this.gameState.currentLevelHasStarted = true;
+      if (!this.gameState.currentTimerHasStarted) {
+        this.gameState.currentTimerHasStarted = true;
+        this.gameState.currentStartTimestamp = this.gameState.engine.timing.timestamp;
       }
     }
+  }
+
+  startLevel(level) {
+    Object.assign(this.gameState, {
+      currentLevel: level,
+      currentTimeSpentOnSpot: 0,
+      currentTimeLeft: this.gameSettings.roundTime,
+      currentBallsLost: 0,
+      currentStartTimestamp: null,
+      currentLevelHasStarted: true,
+      currentTimerHasStarted: false,
+      results: [],
+      goalBlockIndex: null,
+      measureTimeStart: null,
+      measureTimeEnd: null,
+    })
+    this.resetBalls();
+    this.resetSeesaw(this.gameObjects.seesaw);
+    this.setGoalBlockIndex(this.gameObjects.seesaw);
+  }
+
+  resetSeesaw(seesaw) {
+    Body.setAngle(seesaw, 0);
+    Body.setAngularVelocity(seesaw, 0);
   }
 
   render() {
