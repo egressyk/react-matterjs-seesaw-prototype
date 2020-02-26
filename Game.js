@@ -334,7 +334,7 @@ class Game extends React.Component {
 
   startBall() {
     const ball = this.gameObjects.balls.find( ball => ball.position.y === this.gameSettings.ballPosY);
-    if (ball) {
+    if (this.gameState.currentLevelHasStarted && ball) {
       const ballSpawnPosXA = this.gameSettings.canvasWidth / 2 - this.gameSettings.ballSpawnOffset;
       const ballSpawnPosXB = this.gameSettings.canvasWidth / 2 + this.gameSettings.ballSpawnOffset;
       const randXPos = Math.round(Math.random()) > 0 ? ballSpawnPosXA : ballSpawnPosXB;
