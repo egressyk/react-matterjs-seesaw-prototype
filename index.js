@@ -4,6 +4,11 @@ import Game from './Game'
 import './style.css';
 
 class App extends Component {
+  myGameSettings = {
+    showBallsLost: true,
+    showTimeOnSpot: true
+  }
+
   constructor() {
     super();
     this.state = {
@@ -22,7 +27,7 @@ class App extends Component {
   render() {
     return (
       <div>
-        <Game ref="game" gameSettings={{roundTime: 120}}/>
+        <Game ref="game" gameSettings={this.myGameSettings}/>
       </div>
     );
   }

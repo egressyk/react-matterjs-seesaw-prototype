@@ -24,7 +24,7 @@ class Game extends React.Component {
       goalAreaInactive: '#348498',
       goalAreaActive: '#5bd1d7',
     },
-    roundTime: 90,
+    roundTime: 120,
     canvasHeigth: 600,
     canvasWidth: 600,
     seesawBlockSize: 50,
@@ -35,6 +35,9 @@ class Game extends React.Component {
     ballRestitution: 0.3,
     ballPosY: 100,
     ballSpawnOffset: 70,
+    showTimeLeft: true,
+    showTimeOnSpot: false,
+    showBallsLost: false
   }
   
   gameState = {
@@ -217,6 +220,8 @@ class Game extends React.Component {
   }
 
   initDisplayResult() {
+    // Don't set event listener if there's nothing to display at all
+    if (!this.gameSettings.showTimeLeft && !this.gameSettings.showTimeOnSpot && !this.gameSettings.showBallsLost) { return; }
     const ctx = this.gameState.render.context;
     Events.on(this.gameState.render, "afterRender", (event) => {
       ctx.font = "30px Arial";
@@ -225,10 +230,15 @@ class Game extends React.Component {
       const timerText = `${this.gameState.currentTimeLeft}`;
       const onSpotTimerText = `${this.gameState.currentTimeSpentOnSpot.toFixed()} millisec`;
       const ballsLostText = `${this.gameState.currentBallsLost} balls lost`;
-      
-      ctx.fillText(timerText, this.gameSettings.canvasWidth/2, this.gameSettings.canvasHeigth/10);
-      ctx.fillText(onSpotTimerText, this.gameSettings.canvasWidth/2, this.gameSettings.canvasHeigth/10 + 40);
-      ctx.fillText(ballsLostText, this.gameSettings.canvasWidth/2, this.gameSettings.canvasHeigth/10 + 80);
+      if (this.gameSettings.showTimeLeft) {
+        ctx.fillText(timerText, this.gameSettings.canvasWidth/2, this.gameSettings.canvasHeigth/10);
+      }
+      if (this.gameSettings.showTimeOnSpot) { 
+        ctx.fillText(onSpotTimerText, this.gameSettings.canvasWidth/2, this.gameSettings.canvasHeigth/10 + 40);
+      }
+      if (this.gameSettings.showBallsLost) { 
+        ctx.fillText(ballsLostText, this.gameSettings.canvasWidth/2, this.gameSettings.canvasHeigth/10 + 80);
+      }
     });
   }
 
@@ -336,7 +346,6 @@ class Game extends React.Component {
       currentStartTimestamp: null,
       currentLevelHasStarted: true,
       currentTimerHasStarted: false,
-      results: [],
       goalBlockIndex: null,
       measureTimeStart: null,
       measureTimeEnd: null,
@@ -344,6 +353,10 @@ class Game extends React.Component {
     this.resetBalls();
     this.resetSeesaw(this.gameObjects.seesaw);
     this.setGoalBlockIndex(this.gameObjects.seesaw);
+  }
+
+  endLevel() {
+
   }
 
   resetSeesaw(seesaw) {
