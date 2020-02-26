@@ -15,6 +15,7 @@ const Engine = Matter.Engine,
 
 class Game extends React.Component {
   
+  // Default game settings. Any of them can be changed as it pleases by passing gameSettings prop
   gameSettings = {
     palette: {
       textColor: "orange",
@@ -39,7 +40,7 @@ class Game extends React.Component {
     showTimeOnSpot: false,
     showBallsLost: false
   }
-  
+
   gameState = {
     currentLevel: 1,
     currentTimeSpentOnSpot: 0,
@@ -88,7 +89,7 @@ class Game extends React.Component {
     Render.run(this.gameState.render);
   }
 
-    initializeMatterJS() {
+  initializeMatterJS() {
     this.gameState.engine = Engine.create();
     this.gameState.render = Render.create({
       element: this.refs.game,
@@ -303,6 +304,10 @@ class Game extends React.Component {
     Events.on(this.gameState.render, "afterRender", (event) => {
       if (this.gameState.currentTimerHasStarted) {
         this.gameState.currentTimeLeft = Math.round(this.gameSettings.roundTime - ((event.timestamp - this.gameState.currentStartTimestamp) / 1000));
+        if (this.gameState.currentTimeLeft <= 0) {
+          this.gameState.currentTimeLeft = 0;
+          this.endLevel();
+        }
       }
     });
   }
@@ -320,6 +325,11 @@ class Game extends React.Component {
 
   resetBalls() {
     this.gameObjects.balls.forEach( ball => this.resetBall(ball) );
+  }
+
+  resetSeesaw(seesaw) {
+    Body.setAngle(seesaw, 0);
+    Body.setAngularVelocity(seesaw, 0);
   }
 
   startBall() {
@@ -356,12 +366,22 @@ class Game extends React.Component {
   }
 
   endLevel() {
-
+    this.gameState.currentLevelHasStarted = false;
+    this.gameState.currentTimerHasStarted = false;
+    this.gameState.results.push({
+      level: this.gameState.currentLevel,
+      timeSpentOnSpot: this.gameState.currentTimeSpentOnSpot,
+      ballsLost: this.gameState.currentBallsLost
+    });
+    this.onAfterLevelEnd();
   }
 
-  resetSeesaw(seesaw) {
-    Body.setAngle(seesaw, 0);
-    Body.setAngularVelocity(seesaw, 0);
+  onAfterLevelEnd() {
+    if (this.gameState.currentLevel < 3) {
+      this.startLevel(this.gameState.currentLevel + 1);
+    } else {
+      this.props.onGameEnd(this.gameState.results);
+    }
   }
 
   render() {
