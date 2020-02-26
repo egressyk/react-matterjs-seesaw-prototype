@@ -378,6 +378,7 @@ class Game extends React.Component {
 
   onAfterLevelEnd() {
     if (this.gameState.currentLevel < 3) {
+      this.props.onLevelEnd(this.gameState.results[this.gameState.results.length - 1]);
       this.startLevel(this.gameState.currentLevel + 1);
     } else {
       this.props.onGameEnd(this.gameState.results);

@@ -26,8 +26,12 @@ class App extends Component {
     });
   }
 
+  myOnLevelEndFunction(result) {
+    console.log('Last played level results:', result);
+  }
+
   myOnGameEndFunction(results) {
-    console.log(results);
+    console.log('End game results:', results);
   }
 
   render() {
@@ -35,6 +39,7 @@ class App extends Component {
       <div>
         <Game ref="game" 
           gameSettings={this.myGameSettings}
+          onLevelEnd={this.myOnLevelEndFunction}
           onGameEnd={this.myOnGameEndFunction}
         />
       </div>
