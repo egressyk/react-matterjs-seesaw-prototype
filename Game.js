@@ -38,7 +38,10 @@ class Game extends React.Component {
     ballSpawnOffset: 70,
     showTimeLeft: true,
     showTimeOnSpot: false,
-    showBallsLost: false
+    showBallsLost: false,
+    keyCodeLeft: 87,  // 'w' key
+    keyCodeRight: 80, // 'p' key
+    keyCodeStartBall: 32 // 'space' key
   }
 
   gameState = {
@@ -150,13 +153,13 @@ class Game extends React.Component {
 
   initControl(seesaw) {
     document.addEventListener('keydown', (event) => {
-      if (event.keyCode === 37) {
+      if (event.keyCode === this.gameSettings.keyCodeLeft) {
         Body.setAngularVelocity( seesaw, seesaw.angularVelocity - this.gameSettings.seesawAngularVelocity);
       }
-      if (event.keyCode === 39) {
+      if (event.keyCode === this.gameSettings.keyCodeRight) {
         Body.setAngularVelocity( seesaw, seesaw.angularVelocity + this.gameSettings.seesawAngularVelocity);
       }
-      if (event.keyCode === 32) {
+      if (event.keyCode === this.gameSettings.keyCodeStartBall) {
         this.startBall();
       }
     });
