@@ -377,11 +377,11 @@ class Game extends React.Component {
   }
 
   onAfterLevelEnd() {
-    this.props.onLevelEnd(this.gameState.results[this.gameState.results.length - 1]);
+    typeof this.props.onLevelEnd === 'function' && this.props.onLevelEnd(this.gameState.results[this.gameState.results.length - 1]);
     if (this.gameState.currentLevel < 7) {
       this.startLevel(this.gameState.currentLevel + 1);
     } else {
-      this.props.onGameEnd(this.gameState.results);
+      typeof this.props.onGameEnd === 'function' && this.props.onGameEnd(this.gameState.results);
     }
   }
 
