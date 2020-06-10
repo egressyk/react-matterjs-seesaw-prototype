@@ -278,6 +278,18 @@ class Game extends React.Component {
         }
     }); 
 
+    // Reset measureTime values when leaving goal area
+    Events.on(this.gameState.engine, 'collisionEnd', (event) => {
+        const goalBlock = seesaw.parts[this.gameState.goalBlockIndex];
+        const pairs = event.pairs;
+        for (var i = 0; i < pairs.length; i++) {
+          if (pairs[i].bodyA == goalBlock || pairs[i].bodyB == goalBlock) {
+            this.gameState.measureTimeStart = null;
+            this.gameState.measureTimeEnd = null;
+          }
+        }
+    });
+
     // Change color when collision ends
     Events.on(this.gameState.engine, 'collisionEnd', (event) => {
         const goalBlock = seesaw.parts[this.gameState.goalBlockIndex];
